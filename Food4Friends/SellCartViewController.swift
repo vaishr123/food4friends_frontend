@@ -123,6 +123,7 @@ class SellCartViewController: UIViewController, UITableViewDataSource, UITableVi
             buyersServings.remove(at: editActionsForRowAt.row)
 
             if(globalServingsRemaining <= 0 || globalTimeRemaining <= 0) {
+                saleJustFinished = true
                 Singleton.sharedInstance.imageValue = UIImage()
                 self.dismiss(animated: true, completion: nil)
             }

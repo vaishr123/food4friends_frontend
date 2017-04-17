@@ -20,7 +20,7 @@ class SellViewController: UIViewController, UINavigationControllerDelegate, UIIm
     @IBAction func switchModes(_ sender: Any) {
         self.dismiss(animated: true, completion: nil);
     }
-
+    
     @IBAction func openCamera(_ sender: Any) {
         let imagePicker = UIImagePickerController()
         
@@ -54,11 +54,14 @@ class SellViewController: UIViewController, UINavigationControllerDelegate, UIIm
     }
     
     override func viewDidAppear(_ animated: Bool) {
-        noImageSelected.isHidden = false
-        foodImage.image = Singleton.sharedInstance.imageValue
+        if (saleJustFinished) {
+            noImageSelected.isHidden = false
+            foodImage.image = Singleton.sharedInstance.imageValue
+            saleJustFinished = false
+        }
         // Do any additional setup after loading the view.
     }
-
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -76,16 +79,16 @@ class SellViewController: UIViewController, UINavigationControllerDelegate, UIIm
         self.dismiss(animated: true, completion: nil)
         noImageSelected.isHidden = false
     }
-
+    
     
     /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
-
+     // MARK: - Navigation
+     
+     // In a storyboard-based application, you will often want to do a little preparation before navigation
+     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+     // Get the new view controller using segue.destinationViewController.
+     // Pass the selected object to the new view controller.
+     }
+     */
+    
 }

@@ -8,13 +8,48 @@
 
 import UIKit
 import MapKit
+import Alamofire
 
 class BuyConfirmationViewController: UIViewController {
+    
+    
 
+    @IBAction func purchaseItem(_ sender: Any) {
+            let sellerid = userids[selectedIndexPath]
+            let buyerid = userid
+            let parameters: Parameters = [
+                "sellerid": String(sellerid)!,
+                "buyerid": String(buyerid)!,
+                "servings": self.servingsLabel.text! as String,
+            ]
+        print(parameters)
+        
+        Alamofire.request(server + "/api/v1/buy/", method: .post, parameters: parameters, encoding: JSONEncoding.default, headers: ["Content-Type" : "application/json"]).responseString(completionHandler: {response in
+            
+            
+            servingsPurchased = Int(self.servingsLabel.text!)!
+            
+            let viewController = self.storyboard!.instantiateViewController(withIdentifier: "buyCart") as UIViewController
+            self.navigationController?.pushViewController(viewController, animated: true)
+            
+            debugPrint(response)
+            
+            // move to buy cart page
+            
+        })
+        
+        
+    }
+    
+    @IBOutlet weak var timeLeftDisplay: UILabel!
+    @IBOutlet weak var address: UILabel!
     @IBOutlet weak var servingsLabel: UILabel!
     @IBOutlet weak var servingStepperObj: UIStepper!
     @IBOutlet weak var maxServingsWarning: UILabel!
     @IBOutlet weak var totalPrice: UILabel!
+    @IBOutlet weak var selectedImage: UIImageView!
+    
+    @IBOutlet weak var serveringsQuestion: UITextView!
     
     var pricePerItem: Double = 0.0
     
@@ -43,9 +78,28 @@ class BuyConfirmationViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        address.text = addressStrings[selectedIndexPath]
+        address.numberOfLines = 2
+        
+        let epochTime = times[selectedIndexPath]
+        print("EPOACH TIME ", epochTime)
+        let currentEpoch = NSDate().timeIntervalSince1970
+        let diffEpoch = Double(epochTime) - Double(currentEpoch)
+        let time = NSDate(timeIntervalSince1970: Double(diffEpoch))
+        var timeLeft = String(describing: time)
+        let timeArr = timeLeft.characters.split(separator: " ")
+        let timeToDisplay = String(timeArr[1])
+        timeLeftDisplay.text = timeToDisplay
+    
+        selectedImage.image = images[selectedIndexPath]
+        
+        serveringsQuestion.text = "How many servings of " + names[selectedIndexPath] + " would you like?"
+        
         //GET FROM API
-        let maxServings = 13
-        pricePerItem = 3
+        let maxServings = servings[selectedIndexPath]
+        pricePerItem = prices[selectedIndexPath]
+        
+        totalPrice.text = "Price: $" +  String(pricePerItem)
         
         // Max Stepper Value 
         servingStepperObj.maximumValue = Double(maxServings)
@@ -65,7 +119,7 @@ class BuyConfirmationViewController: UIViewController {
         // Dispose of any resources that can be recreated.
     }
     
-    
+
     /*
     // MARK: - Navigation
 
