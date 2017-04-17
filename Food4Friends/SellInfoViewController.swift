@@ -79,8 +79,8 @@ class SellInfoViewController: UIViewController {
         
         
         let postDict = ["userid": userid, "servings": servings.text!, "duration": durationMin.text!, "price": price.text!, "address": address.text!, "description": itemDescription.text!] as [String: String]
-        numOfServingsSelling = servings.text!
-        timeRemainingPosted = durationMin.text!
+        //numOfServingsSelling = servings.text!
+        //timeRemainingPosted = durationMin.text!
         
         
         do {
