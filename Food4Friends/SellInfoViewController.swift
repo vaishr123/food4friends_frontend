@@ -11,6 +11,7 @@ import Alamofire
 
 var numOfServingsSelling: String = ""
 var timeRemainingPosted: String = ""
+var sellingItem: String = ""
 class SellInfoViewController: UIViewController {
 
     @IBOutlet weak var durationMin: UITextField!
@@ -79,10 +80,6 @@ class SellInfoViewController: UIViewController {
         
         
         let postDict = ["userid": userid, "servings": servings.text!, "duration": durationMin.text!, "price": price.text!, "address": address.text!, "description": itemDescription.text!] as [String: String]
-        //numOfServingsSelling = servings.text!
-        //timeRemainingPosted = durationMin.text!
-        
-        
         do {
             let sell_url = try URLRequest(url: server + "/api/v1/sell/", method: .post, headers: ["Content-Type" : multipartformdata.contentType])
             
@@ -98,8 +95,12 @@ class SellInfoViewController: UIViewController {
             }, with: sell_url) { (result) in
                 switch result {
                 case .success(let upload, _, _):
-                    var secondViewController = self.storyboard?.instantiateViewController(withIdentifier: "sellCartView") as! UIViewController!
-                    self.navigationController?.pushViewController(secondViewController!, animated: true)
+                    numOfServingsSelling = self.servings.text!
+                    timeRemainingPosted = self.durationMin.text!
+                    sellingItem = self.itemDescription.text!
+                    let viewController = self.storyboard!.instantiateViewController(withIdentifier: "sellCart") as UIViewController
+                    self.present(viewController, animated: true, completion: nil)
+                    
                     print(upload)
                 case .failure( _):
                     print("no")

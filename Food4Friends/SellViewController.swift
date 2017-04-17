@@ -62,6 +62,7 @@ class SellViewController: UIViewController, UINavigationControllerDelegate, UIIm
         foodImage.image = image
         Singleton.sharedInstance.imageValue = image
         self.dismiss(animated: true, completion: nil)
+        noImageSelected.isHidden = true
     }
     
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
