@@ -48,7 +48,14 @@ class SellViewController: UIViewController, UINavigationControllerDelegate, UIIm
     }
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        noImageSelected.isHidden = false
+        foodImage.image = Singleton.sharedInstance.imageValue
+        // Do any additional setup after loading the view.
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        noImageSelected.isHidden = false
+        foodImage.image = Singleton.sharedInstance.imageValue
         // Do any additional setup after loading the view.
     }
 

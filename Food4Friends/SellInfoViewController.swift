@@ -96,7 +96,7 @@ class SellInfoViewController: UIViewController {
         let multipartformdata = MultipartFormData()
         
         var smallImage = resizeImage(image: Singleton.sharedInstance.imageValue!, targetSize: CGSize(width: 300, height: 450))
-        if ((durationMin.text?.isEmpty)! && (address.text?.isEmpty)! && (price.text?.isEmpty)! && (servings.text?.isEmpty)! && (itemDescription.text?.isEmpty)!) {
+        if ((durationMin.text?.isEmpty)! || (address.text?.isEmpty)! || (price.text?.isEmpty)! || (servings.text?.isEmpty)! || (itemDescription.text?.isEmpty)!) {
             let alertController = UIAlertController(title: "Incomplete Form", message:
                 "All fields are required", preferredStyle: UIAlertControllerStyle.alert)
             alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.default, handler: nil))
@@ -130,6 +130,8 @@ class SellInfoViewController: UIViewController {
                     timeRemainingPosted = self.durationMin.text!
                     sellingItem = self.itemDescription.text!
                     let viewController = self.storyboard!.instantiateViewController(withIdentifier: "sellCart") as UIViewController
+                    
+                    self.navigationController?.popToRootViewController(animated: false)
                     self.present(viewController, animated: true, completion: nil)
                     
                     print(upload)

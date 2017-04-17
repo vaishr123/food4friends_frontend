@@ -19,6 +19,8 @@ func minutesToHoursMinutesSeconds (minutes : Int) -> (Int, Int, Int) {
 var buyerids: [String] = []
 var buyersServings: [Int] = []
 var globalTimeRemaining: Int = 0
+var globalServingsRemaining: Int = 0
+var saleJustFinished: Bool = false
 
 class SellCartViewController: UIViewController, UITableViewDataSource, UITableViewDelegate  {
 
@@ -42,6 +44,8 @@ class SellCartViewController: UIViewController, UITableViewDataSource, UITableVi
         self.timeRemaining.text = "\(timeRemainingPosted)" + " minutes remaining"
         
         globalTimeRemaining = Int(timeRemainingPosted)!
+        globalServingsRemaining = Int(numOfServingsSelling)!
+        
         var timer = Timer.scheduledTimer(timeInterval: 60, target: self, selector: #selector(self.update), userInfo: nil, repeats: true);
         
         refreshControl = UIRefreshControl()
@@ -86,6 +90,7 @@ class SellCartViewController: UIViewController, UITableViewDataSource, UITableVi
                 }
             }
             self.timeRemaining.text = "\(String(globalTimeRemaining))" + " minutes remaining"
+            self.numServings.text = "\(String(globalServingsRemaining))" + " servings remaining"
             self.refreshControl.endRefreshing()
             self.tableView.reloadData()
         })
@@ -113,8 +118,14 @@ class SellCartViewController: UIViewController, UITableViewDataSource, UITableVi
             Alamofire.request(server + "/api/v1/sell/complete/", method: .post, parameters:parameters, encoding: JSONEncoding.default, headers: ["Content-Type":"application/json"]).responseString(completionHandler: {response in
                 print(response.result)
             })
+            globalServingsRemaining = globalServingsRemaining - buyersServings[editActionsForRowAt.row]
             buyerids.remove(at: editActionsForRowAt.row)
             buyersServings.remove(at: editActionsForRowAt.row)
+
+            if(globalServingsRemaining <= 0 || globalTimeRemaining <= 0) {
+                Singleton.sharedInstance.imageValue = UIImage()
+                self.dismiss(animated: true, completion: nil)
+            }
             self.refresh(sender: self)
             //self.tableView.reloadData()
             
