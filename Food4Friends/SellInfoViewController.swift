@@ -12,6 +12,7 @@ import Alamofire
 var numOfServingsSelling: String = ""
 var timeRemainingPosted: String = ""
 var sellingItem: String = ""
+
 class SellInfoViewController: UIViewController {
 
     @IBOutlet weak var durationMin: UITextField!
@@ -64,36 +65,66 @@ class SellInfoViewController: UIViewController {
         view.addGestureRecognizer(tap)
         
     }
+    
+    func resizeImage(image: UIImage, targetSize: CGSize) -> UIImage {
+        let size = image.size
+        
+        let widthRatio  = targetSize.width  / image.size.width
+        let heightRatio = targetSize.height / image.size.height
+        
+        // Figure out what our orientation is, and use that to form the rectangle
+        var newSize: CGSize
+        if(widthRatio > heightRatio) {
+            newSize = CGSize.init(width: CGFloat.init(size.width * heightRatio), height: CGFloat.init(size.height * heightRatio))
+        } else {
+            newSize = CGSize.init(width: CGFloat.init(size.width * widthRatio),  height: CGFloat.init(size.height * widthRatio))
+        }
+        
+        // This is the rect that we've calculated out and this is what is actually used below
+        let rect = CGRect.init(x: CGFloat.init(0), y: CGFloat.init(0),width: CGFloat.init(newSize.width), height: CGFloat.init(newSize.height))
+        
+        // Actually do the resizing to the rect using the ImageContext stuff
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+        image.draw(in: rect)
+        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return newImage!
+    }
 
     @IBAction func sellFood(_ sender: Any) {
         let multipartformdata = MultipartFormData()
         
-        
-//        if ((durationMin.text?.isEmpty)! && (address.text?.isEmpty)! && (price.text?.isEmpty)! && (servings.text?.isEmpty)! && (itemDescription.text?.isEmpty)!) {
-//            let alertController = UIAlertController(title: "Incomplete Form", message:
-//                "All fields are required", preferredStyle: UIAlertControllerStyle.alert)
-//            alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.default, handler: nil))
-//            
-//            self.present(alertController, animated: true, completion: nil)
-//        }
-//        
+        var smallImage = resizeImage(image: Singleton.sharedInstance.imageValue!, targetSize: CGSize(width: 300, height: 450))
+        if ((durationMin.text?.isEmpty)! && (address.text?.isEmpty)! && (price.text?.isEmpty)! && (servings.text?.isEmpty)! && (itemDescription.text?.isEmpty)!) {
+            let alertController = UIAlertController(title: "Incomplete Form", message:
+                "All fields are required", preferredStyle: UIAlertControllerStyle.alert)
+            alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.default, handler: nil))
+            
+            self.present(alertController, animated: true, completion: nil)
+            return
+        }
         
         
         let postDict = ["userid": userid, "servings": servings.text!, "duration": durationMin.text!, "price": price.text!, "address": address.text!, "description": itemDescription.text!] as [String: String]
         do {
             let sell_url = try URLRequest(url: server + "/api/v1/sell/", method: .post, headers: ["Content-Type" : multipartformdata.contentType])
             
-            let imageData = UIImagePNGRepresentation(foodPic.image!)!
-            
+            let imageData = UIImagePNGRepresentation(smallImage)!
+            let filename = String(NSDate().timeIntervalSince1970).trimmingCharacters(in: .punctuationCharacters)
+            var splitFile = filename.substring(to: filename.range(of: ".")?.lowerBound ?? filename.endIndex)
+            splitFile = splitFile + ".png"
+            print("FILENAME: " + splitFile)
             Alamofire.upload(multipartFormData: { (multipartFormData) in
-                multipartFormData.append(imageData, withName: "photo", fileName: "file.png", mimeType: "image/png")
+                multipartFormData.append(imageData, withName: "photo", fileName: splitFile, mimeType: "image/png")
                 
                 for (key, value) in postDict {
                     multipartFormData.append(value.data(using: String.Encoding.utf8)!, withName: key)
                 }
                 
-            }, with: sell_url) { (result) in
-                switch result {
+            }, with: sell_url) { response in
+                debugPrint(response)
+                switch response {
                 case .success(let upload, _, _):
                     numOfServingsSelling = self.servings.text!
                     timeRemainingPosted = self.durationMin.text!
@@ -104,6 +135,12 @@ class SellInfoViewController: UIViewController {
                     print(upload)
                 case .failure( _):
                     print("no")
+                    let alertController = UIAlertController(title: "Invalid input", message:
+                        "Please make sure all input fields have valid formatting", preferredStyle: UIAlertControllerStyle.alert)
+                    alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.default, handler: nil))
+        
+                    self.present(alertController, animated: true, completion: nil)
+                    
                 }
             }
             

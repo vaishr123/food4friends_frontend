@@ -16,19 +16,79 @@ func minutesToHoursMinutesSeconds (minutes : Int) -> (Int, Int, Int) {
     return (minutes / 60, (minutes % 60), (minutes % 60) % 60)
 }
 
-class SellCartViewController: UIViewController {
+var buyerids: [String] = []
+var buyersServings: [Int] = []
+var globalTimeRemaining: Int = 0
+
+class SellCartViewController: UIViewController, UITableViewDataSource, UITableViewDelegate  {
 
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var timeRemaining: UILabel!
     @IBOutlet weak var numServings: UILabel!
     @IBOutlet weak var itemSold: UILabel!
     
+    var refreshControl: UIRefreshControl!
+    
+    func update() {
+        globalTimeRemaining = globalTimeRemaining - 1
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         self.itemSold.text = "Selling: " + sellingItem
-        self.numServings.text = numOfServingsSelling + " servings"
-        let (h,m,s) = minutesToHoursMinutesSeconds(minutes: Int(timeRemainingPosted)!)
-        self.timeRemaining.text = "\(h):\(m):\(s) remaining"
+        self.numServings.text = numOfServingsSelling + " servings remaining"
+        //let (h,m,s) = minutesToHoursMinutesSeconds(minutes: Int(timeRemainingPosted)!)
+        //self.timeRemaining.text = "\(h):\(m) remaining"
+        self.timeRemaining.text = "\(timeRemainingPosted)" + " minutes remaining"
+        
+        globalTimeRemaining = Int(timeRemainingPosted)!
+        var timer = Timer.scheduledTimer(timeInterval: 60, target: self, selector: #selector(self.update), userInfo: nil, repeats: true);
+        
+        refreshControl = UIRefreshControl()
+        refreshControl.attributedTitle = NSAttributedString(string: "Finding new buyers")
+        refreshControl.addTarget(self, action: #selector(refresh), for: UIControlEvents.valueChanged)
+        tableView.addSubview(refreshControl)
+        
+        Alamofire.request(server + "/api/v1/sell/complete/").responseJSON(completionHandler: {
+            response in
+            print(response.result)
+            
+            if let JSON = response.result.value as? NSDictionary {
+                print("json:")
+                print(JSON)
+                
+                if let arrJSON = JSON["transactions"] as? NSArray {
+                    for transaction in (arrJSON as? [[String:Any]])!{
+                        buyerids.append(transaction["buyerid"] as! String)
+                        buyersServings.append(transaction["servings"] as! Int)
+                    }
+                }
+            }
+        })
+    }
+    
+    func refresh(sender:AnyObject) {
+        Alamofire.request(server + "/api/v1/sell/complete/").responseJSON(completionHandler: {
+            response in
+            print(response.result)
+            
+            if let JSON = response.result.value as? NSDictionary {
+                print("json:")
+                print(JSON)
+                buyerids = []
+                buyersServings = []
+                
+                if let arrJSON = JSON["transactions"] as? NSArray {
+                    for transaction in (arrJSON as? [[String:Any]])!{
+                        buyerids.append(transaction["buyerid"] as! String)
+                        buyersServings.append(transaction["servings"] as! Int)
+                    }
+                }
+            }
+            self.timeRemaining.text = "\(String(globalTimeRemaining))" + " minutes remaining"
+            self.refreshControl.endRefreshing()
+            self.tableView.reloadData()
+        })
     }
 
     override func didReceiveMemoryWarning() {
@@ -43,14 +103,37 @@ class SellCartViewController: UIViewController {
             }.resume()
     }
     
+    func tableView(_ tableView: UITableView, editActionsForRowAt: IndexPath) -> [UITableViewRowAction]? {
+        let more = UITableViewRowAction(style: .normal, title: "Complete") { action, index in
+            print("Complete button tapped")
+            let parameters: Parameters = [
+                "userid": String(userid)!,
+                "buyerid": String(10208834233036319)
+            ]
+            Alamofire.request(server + "/api/v1/sell/complete/", method: .post, parameters:parameters, encoding: JSONEncoding.default, headers: ["Content-Type":"application/json"]).responseString(completionHandler: {response in
+                print(response.result)
+            })
+            buyerids.remove(at: editActionsForRowAt.row)
+            buyersServings.remove(at: editActionsForRowAt.row)
+            self.refresh(sender: self)
+            //self.tableView.reloadData()
+            
+        }
+        more.backgroundColor = UIColor.lightGray
+        
+        return [more]
+    }
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 3
+        return buyerids.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = self.tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as? SellCartTableViewCell
-        let request = FBSDKGraphRequest(graphPath: "me", parameters: ["fields":"email,name, picture.type(large)"], tokenString: userToken, version: nil , httpMethod: "GET");
+        
+        let tokenVal = "EAAFhbcIKPLABANr1W5jOebrbZAm8BZAZC4E94OFbAPxulanTp5rZAGo0vUKQCO9K3pJ4Cd0rzsKZC0FBJkfZAN4eYngywdVNZAuN7HPChvtfeBrT2EQVeIbAURnHmvCUF6ymXQgwuM1D3kxhQi1fc97WQuzbbt2ENMkXDWb9KVZAk3e5ItC0iFJMrje33HRZBsmpmPxXApb8bhoF2XZCI3JF47Wh58hrh3CtEZD"
+        let request = FBSDKGraphRequest(graphPath: "me", parameters: ["fields":"email,name, picture.type(small)"], tokenString: tokenVal, version: nil , httpMethod: "GET");
         
         request?.start(completionHandler: { [weak self] connection, result, error in
             if error != nil {
@@ -77,20 +160,7 @@ class SellCartViewController: UIViewController {
             }
             
         })
+        cell?.buyerServings.text = String(buyersServings[indexPath.row])
         return cell!
-    }
-    
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let buyConfirmVC = self.storyboard!.instantiateViewController(withIdentifier: "buyConfirmationPage") as! BuyConfirmationViewController
-        
-        // Creates Popover View
-        let nav = UINavigationController(rootViewController: buyConfirmVC)
-        nav.modalPresentationStyle = UIModalPresentationStyle.popover
-        nav.navigationBar.isHidden = true
-        let popover = nav.popoverPresentationController
-        popover?.sourceView = self.view
-        
-        self.present(nav, animated: true, completion: nil)
-        
     }
 }
